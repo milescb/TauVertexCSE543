@@ -20,3 +20,7 @@
 ## Data
 
 Link and installation info coming soon! A small sample is included in the data directory for now. 
+
+## Running the code
+
+To train simply run the training script. This saves a trained model to the selected output directory. Then, to test, run the testing script over the trained model. 
