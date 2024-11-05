@@ -1,4 +1,10 @@
 import numpy as np
+import awkward as ak
+
+from sklearn.model_selection import train_test_split
+
+import torch
+from torch.utils.data import Dataset
 
 class LorentzVectorArray:
     """
@@ -119,3 +125,64 @@ class ThreeVectorArray:
     def __len__(self):
         """Return the length of the array"""
         return len(self._x)
+    
+class DecayDataset(Dataset):
+    def __init__(self, inputs, labels):
+        self.inputs = torch.from_numpy(inputs).float()
+        self.labels = torch.from_numpy(labels).float()
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def __getitem__(self, idx):
+        return self.inputs[idx], self.labels[idx]
+    
+def training_data(tree, test_size=0.2, random_state=42):
+    """Get testing and training datasets from a TTree.
+
+    Args:
+        tree (ROOT::TTree): TTree containing input data
+        test_size (float, optional): Percentage of dataset for testing. Defaults to 0.2.
+        random_state (int, optional): Defaults to 42.
+
+    Returns:
+        training dataset, validation dataset
+    """
+    
+    muon_p4 = LorentzVectorArray(tree['muon_truth_p4'].array())
+    lep_impact_parameter = ThreeVectorArray(tree['lep_impactParameter'].array())
+    primary_vertex = ThreeVectorArray(tree['truth_primaryVertex_v3'].array())
+
+    inputs = ak.concatenate([
+        muon_p4.pt[:, None],
+        muon_p4.eta[:, None],
+        muon_p4.phi[:, None],
+        muon_p4.m[:, None],
+        lep_impact_parameter.x[:, None],
+        lep_impact_parameter.y[:, None],
+        lep_impact_parameter.z[:, None],
+        primary_vertex.x[:, None],
+        primary_vertex.y[:, None],
+        primary_vertex.z[:, None],
+    ], axis=1)
+
+    truth_decay_vertex = ThreeVectorArray(tree['truth_lep_decayVertex_v3'].array())
+
+    labels = ak.concatenate([
+        truth_decay_vertex.x[:, None],
+        truth_decay_vertex.y[:, None],
+        truth_decay_vertex.z[:, None],
+    ], axis=1)
+
+    inputs = ak.to_numpy(inputs)
+    labels = ak.to_numpy(labels)
+
+    dataset = DecayDataset(inputs, labels)
+    train_indices, val_indices = train_test_split(
+        range(len(dataset)), test_size=test_size, random_state=random_state
+    )
+
+    train_dataset = torch.utils.data.Subset(dataset, train_indices)
+    val_dataset = torch.utils.data.Subset(dataset, val_indices)
+    
+    return train_dataset, val_dataset
