@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="output")
     args = parser.parse_args()
     
-    file = uproot.open("data/data.root")
+    file = uproot.open("data/data_large.root")
     tree = file["NOMINAL"]
     
     # classical result

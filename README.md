@@ -19,7 +19,7 @@
 
 ## Data
 
-Link and installation info coming soon! A small sample is included in the data directory for now. 
+For convenience, the dataset used for training is included at `data/data_large.root`. This sample contains ~1.7 million events to train on. 
 
 ## Running the code
 
