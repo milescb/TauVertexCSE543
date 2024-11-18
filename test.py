@@ -5,9 +5,9 @@ import uproot
 import torch
 from torch.utils.data import DataLoader
 
-from decayvertex.process_data import testing_data, ThreeVectorArray
+from decayvertex.process_data import testing_data
 from decayvertex.architecture import MDNDecayNet
-from decayvertex.plotting import plot_multiple_histograms_with_ratio
+from decayvertex.plotting import plot_multiple_histograms_with_ratio, plot_response_lineshape
 
 def evaluate_model(model, test_loader):
     """Evaluate MDN model and return predictions with uncertainties"""
@@ -71,6 +71,12 @@ def main():
             labels=['Truth', 'Prediction', 'Classical'],
             save=f"{args.output_dir}/estimated_vertex_{component}.pdf",
             normalize=True
+        )
+        plot_response_lineshape(true_values[:, i], predictions[:, i], est_decay_vertex_vec[i],
+                                bins=50, range=plot_range, 
+                                xlabel=f'Prediction / Truth for {component} [mm]',
+                                ylabel='Normalized Events',
+                                save=f"{args.output_dir}/response_lineshape_{component}.pdf"
         )
 
 if __name__ == "__main__":

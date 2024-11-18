@@ -106,15 +106,22 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
     """Plot response and lineshape (predicted / truth) of decay vertex."""
     
     # make histograms and take the ratio of classical/truth and nn/truth
-    hist_truth, _ = np.histogram(truth, bins=bins, range=range)
+    hist_truth, edges = np.histogram(truth, bins=bins, range=range)
     hist_classical, _ = np.histogram(pred_classical, bins=bins, range=range)
     hist_nn, _ = np.histogram(pred_nn, bins=bins, range=range)
     
-    ratio_classical = np.divide(hist_classical, hist_truth, out=np.zeros_like(hist_classical), where=hist_truth!=0)
-    ratio_nn = np.divide(hist_nn, hist_truth, out=np.zeros_like(hist_nn), where=hist_truth!=0)
+    bin_centers = (edges[:-1] + edges[1:]) / 2
     
-    plt.plot(ratio_classical, label='Classical')
-    plt.plot(ratio_nn, label='NN')
+    ratio_classical = np.divide(hist_classical, hist_truth, 
+                              out=np.zeros_like(hist_classical, dtype=float), 
+                              where=hist_truth>0)
+    ratio_nn = np.divide(hist_nn, hist_truth,
+                        out=np.zeros_like(hist_nn, dtype=float),
+                        where=hist_truth>0)
+    
+    plt.figure(figsize=figsize)
+    plt.step(bin_centers, ratio_classical, where='mid', label='Classical')
+    plt.step(bin_centers, ratio_nn, where='mid', label='NN')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()

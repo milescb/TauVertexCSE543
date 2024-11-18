@@ -33,6 +33,10 @@ def main():
     
     training_losses = []
     validation_losses = []
+    
+    best_val_loss = float('inf')
+    patience_counter = 0
+    early_stop = False
 
     for epoch in range(args.num_epochs):
         model.train()
@@ -69,13 +73,35 @@ def main():
                 
         avg_val_loss = total_val_loss / len(val_loader)
         
-        # Print training and validation loss
+        # Early stopping check
+        if avg_val_loss < best_val_loss - args.min_delta:
+            best_val_loss = avg_val_loss
+            patience_counter = 0
+            # Save best model
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'val_indices': val_indices,
+                'epoch': epoch,
+                'best_val_loss': best_val_loss
+            }, f"{args.output_dir}/best_model.pth")
+        else:
+            patience_counter += 1
+            
+        if patience_counter >= args.patience:
+            print(f'Early stopping triggered after {epoch + 1} epochs')
+            early_stop = True
+            break
+            
         print(f"Epoch [{epoch+1}/{args.num_epochs}], "
             f"Training Loss: {avg_train_loss:.4f}, "
             f"Validation Loss: {avg_val_loss:.4f}")
         
         training_losses.append(avg_train_loss)
         validation_losses.append(avg_val_loss)
+
+    # After training loop
+    if not early_stop:
+        print(f'Completed all {args.num_epochs} epochs')
     
     # plot loss and save model 
     plot_loss(training_losses, validation_losses, save=f"{args.output_dir}/loss.png")
@@ -93,6 +119,10 @@ if __name__ == "__main__":
     parser.add_argument("-out", "--output-dir", type=str, default="output")
     parser.add_argument("-lr", "--learning-rate", type=float, default=0.001)
     parser.add_argument("--n-gaussians", type=int, default=2)
+    parser.add_argument("--patience", type=int, default=5,
+                    help="Number of epochs to wait for improvement before stopping")
+    parser.add_argument("--min-delta", type=float, default=1e-3,
+                    help="Minimum change in validation loss to qualify as an improvement")
     args = parser.parse_args()
     
     # checkout for mps or cuda device
