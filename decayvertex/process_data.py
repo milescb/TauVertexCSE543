@@ -138,7 +138,7 @@ class DecayDataset(Dataset):
         return self.inputs[idx], self.labels[idx]
     
 def training_data(tree, test_size=0.2, random_state=42):
-    """Get testing and training datasets from a TTree.
+    """Get training datasets from a TTree.
 
     Args:
         tree (ROOT::TTree): TTree containing input data
@@ -157,7 +157,6 @@ def training_data(tree, test_size=0.2, random_state=42):
         muon_p4.pt[:, None],
         muon_p4.eta[:, None],
         muon_p4.phi[:, None],
-        muon_p4.m[:, None],
         lep_impact_parameter.x[:, None],
         lep_impact_parameter.y[:, None],
         lep_impact_parameter.z[:, None],
@@ -185,4 +184,52 @@ def training_data(tree, test_size=0.2, random_state=42):
     train_dataset = torch.utils.data.Subset(dataset, train_indices)
     val_dataset = torch.utils.data.Subset(dataset, val_indices)
     
-    return train_dataset, val_dataset
+    return train_dataset, val_dataset, val_indices
+
+def testing_data(tree, val_indices):
+    """Get testing dataset from a TTree.
+
+    Args:
+        tree (ROOT::TTree): TTree containing input data
+        val_indices (list): List of indices to test on
+
+    Returns:
+        testing dataset, estimated (classical) decay vertex
+    """
+    
+    muon_p4 = LorentzVectorArray(tree['muon_truth_p4'].array())
+    lep_impact_parameter = ThreeVectorArray(tree['lep_impactParameter'].array())
+    primary_vertex = ThreeVectorArray(tree['truth_primaryVertex_v3'].array())
+
+    inputs = ak.concatenate([
+        muon_p4.pt[:, None],
+        muon_p4.eta[:, None],
+        muon_p4.phi[:, None],
+        lep_impact_parameter.x[:, None],
+        lep_impact_parameter.y[:, None],
+        lep_impact_parameter.z[:, None],
+        primary_vertex.x[:, None],
+        primary_vertex.y[:, None],
+        primary_vertex.z[:, None],
+    ], axis=1)
+
+    truth_decay_vertex = ThreeVectorArray(tree['truth_lep_decayVertex_v3'].array())
+
+    labels = ak.concatenate([
+        truth_decay_vertex.x[:, None],
+        truth_decay_vertex.y[:, None],
+        truth_decay_vertex.z[:, None],
+    ], axis=1)
+
+    inputs = ak.to_numpy(inputs)
+    labels = ak.to_numpy(labels)
+
+    dataset = DecayDataset(inputs, labels)
+    test_dataset = torch.utils.data.Subset(dataset, val_indices)
+    
+    # classical estimate of decay vertex
+    est_decay_vertex = ThreeVectorArray(tree['est_lep_decayVertex_v3'].array())
+    est_decay_vertex_vec = np.array([est_decay_vertex.x, est_decay_vertex.y, est_decay_vertex.z])
+    est_decay_vertex_vec = est_decay_vertex_vec[:, val_indices]
+    
+    return test_dataset, est_decay_vertex_vec

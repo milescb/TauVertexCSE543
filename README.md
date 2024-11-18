@@ -19,7 +19,11 @@
 
 ## Data
 
-For convenience, the dataset used for training is included at `data/data_large.root`. This sample contains ~1.7 million events to train on. 
+For convenience, a small dataset used for training is included at `data/data_large.root`. To download a sample with ~1.7 million events run:
+
+```
+curl -o data/data_large.root https://cernbox.cern.ch/remote.php/dav/public-files/3w2v4biLSGyi9BL/data_large.root
+```
 
 ## Running the code
 
