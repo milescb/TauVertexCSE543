@@ -28,7 +28,7 @@ def main():
     model = model.to(device)
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
     
     training_losses = []
     validation_losses = []
@@ -90,10 +90,11 @@ def main():
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num-epochs", type=int, default=10)
-    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("-epoch", "--num-epochs", type=int, default=10)
+    parser.add_argument("-bs", "--batch-size", type=int, default=64)
     parser.add_argument("--hidden-size", type=int, default=64)
-    parser.add_argument("--output-dir", type=str, default="output")
+    parser.add_argument("-out", "--output-dir", type=str, default="output")
+    parser.add_argument("-lr", "--learning-rate", type=float, default=0.001)
     args = parser.parse_args()
     
     # checkout for mps or cuda device
