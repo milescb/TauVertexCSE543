@@ -9,7 +9,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from decayvertex.process_data import training_data
-from decayvertex.architecture import DecayNet
+from decayvertex.architecture import MDNDecayNet
 from decayvertex.plotting import plot_loss
 
 def main():
@@ -23,8 +23,9 @@ def main():
     input_size = 10
     hidden_size = args.hidden_size
     output_size = 3
+    n_gaussians = args.n_gaussians
 
-    model = DecayNet(input_size, hidden_size, output_size)
+    model = MDNDecayNet(input_size, hidden_size, output_size, n_gaussians)
     model = model.to(device)
 
     criterion = nn.MSELoss()
@@ -38,39 +39,32 @@ def main():
         total_train_loss = 0.0
 
         for inputs, labels in train_loader:
-            
             inputs = inputs.to(device)
             labels = labels.to(device)
             
-            # Zero the gradient buffers
             optimizer.zero_grad()
             
-            # Forward pass
-            outputs = model(inputs)
+            pi, mu, sigma = model(inputs)
+            loss = model.mdn_loss_fn(pi, mu, sigma, labels)
             
-            # Compute loss
-            loss = criterion(outputs, labels)
-            
-            # Backward pass and optimize
             loss.backward()
             optimizer.step()
             
             total_train_loss += loss.item()
             
-        # Compute average training loss
         avg_train_loss = total_train_loss / len(train_loader)
         
+        # Validation loop
         model.eval()
         total_val_loss = 0.0
         
         with torch.no_grad():
             for inputs, labels in val_loader:
-                
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                pi, mu, sigma = model(inputs)
+                loss = model.mdn_loss_fn(pi, mu, sigma, labels)
                 total_val_loss += loss.item()
                 
         avg_val_loss = total_val_loss / len(val_loader)
@@ -95,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--hidden-size", type=int, default=64)
     parser.add_argument("-out", "--output-dir", type=str, default="output")
     parser.add_argument("-lr", "--learning-rate", type=float, default=0.001)
+    parser.add_argument("--n-gaussians", type=int, default=2)
     args = parser.parse_args()
     
     # checkout for mps or cuda device
