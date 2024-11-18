@@ -5,7 +5,7 @@ import uproot
 import torch
 from torch.utils.data import DataLoader
 
-from decayvertex.process_data import training_data, ThreeVectorArray
+from decayvertex.process_data import testing_data, ThreeVectorArray
 from decayvertex.architecture import MDNDecayNet
 from decayvertex.plotting import plot_multiple_histograms_with_ratio
 
@@ -34,14 +34,18 @@ def evaluate_model(model, test_loader):
             torch.cat(true_values))
 
 def main():
-    # Load test data
-    _, test_dataset = training_data(tree)
+    # Load model and validation indices
+    checkpoint = torch.load(args.model_path)
+    val_indices = checkpoint['val_indices']
+    
+    # Load test data using validation indices
+    test_dataset, est_decay_vertex_vec = testing_data(tree, val_indices)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
     
     # Load model
-    input_size = 10
+    input_size = 9
     model = MDNDecayNet(input_size, args.hidden_size, output_size=3, n_gaussians=args.n_gaussians)
-    model.load_state_dict(torch.load(args.model_path))
+    model.load_state_dict(checkpoint['model_state_dict'])
     
     # Get predictions with uncertainties
     predictions, uncertainties, true_values = evaluate_model(model, test_loader)
@@ -63,9 +67,9 @@ def main():
             bins=50,
             range=plot_range,
             xlabel=f'Decay Vertex {component} [mm]',
-            ylabel='Events',
+            ylabel='Normalized Events',
             labels=['Truth', 'Prediction', 'Classical'],
-            save=f"{args.output_dir}/test_{component}.pdf",
+            save=f"{args.output_dir}/estimated_vertex_{component}.pdf",
             normalize=True
         )
 
@@ -80,10 +84,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     file = uproot.open("data/data_large.root")
-    tree = file["NOMINAL"]
-    
-    # classical result
-    est_decay_vertex = ThreeVectorArray(tree['est_lep_decayVertex_v3'].array())
-    est_decay_vertex_vec = np.array([est_decay_vertex.x, est_decay_vertex.y, est_decay_vertex.z])   
+    tree = file["NOMINAL"]   
     
     main()

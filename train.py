@@ -14,13 +14,13 @@ from decayvertex.plotting import plot_loss
 
 def main():
 
-    train_dataset, val_dataset = training_data(tree)
+    train_dataset, val_dataset, val_indices = training_data(tree)
 
     batch_size = args.batch_size
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    input_size = 10
+    input_size = 9
     hidden_size = args.hidden_size
     output_size = 3
     n_gaussians = args.n_gaussians
@@ -79,7 +79,10 @@ def main():
     
     # plot loss and save model 
     plot_loss(training_losses, validation_losses, save=f"{args.output_dir}/loss.png")
-    torch.save(model.state_dict(), f"{args.output_dir}/model.pth")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'val_indices': val_indices
+    }, f"{args.output_dir}/model.pth")
         
 if __name__ == "__main__":
     
