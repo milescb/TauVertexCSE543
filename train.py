@@ -9,22 +9,23 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from decayvertex.process_data import training_data
-from decayvertex.architecture import DecayNet
+from decayvertex.architecture import MDNDecayNet
 from decayvertex.plotting import plot_loss
 
 def main():
 
-    train_dataset, val_dataset = training_data(tree)
+    train_dataset, val_dataset, val_indices = training_data(tree)
 
     batch_size = args.batch_size
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    input_size = 10
+    input_size = 9
     hidden_size = args.hidden_size
     output_size = 3
+    n_gaussians = args.n_gaussians
 
-    model = DecayNet(input_size, hidden_size, output_size)
+    model = MDNDecayNet(input_size, hidden_size, output_size, n_gaussians)
     model = model.to(device)
 
     criterion = nn.MSELoss()
@@ -32,60 +33,82 @@ def main():
     
     training_losses = []
     validation_losses = []
+    
+    best_val_loss = float('inf')
+    patience_counter = 0
+    early_stop = False
 
     for epoch in range(args.num_epochs):
         model.train()
         total_train_loss = 0.0
 
         for inputs, labels in train_loader:
-            
             inputs = inputs.to(device)
             labels = labels.to(device)
             
-            # Zero the gradient buffers
             optimizer.zero_grad()
             
-            # Forward pass
-            outputs = model(inputs)
+            pi, mu, sigma = model(inputs)
+            loss = model.mdn_loss_fn(pi, mu, sigma, labels)
             
-            # Compute loss
-            loss = criterion(outputs, labels)
-            
-            # Backward pass and optimize
             loss.backward()
             optimizer.step()
             
             total_train_loss += loss.item()
             
-        # Compute average training loss
         avg_train_loss = total_train_loss / len(train_loader)
         
+        # Validation loop
         model.eval()
         total_val_loss = 0.0
         
         with torch.no_grad():
             for inputs, labels in val_loader:
-                
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                pi, mu, sigma = model(inputs)
+                loss = model.mdn_loss_fn(pi, mu, sigma, labels)
                 total_val_loss += loss.item()
                 
         avg_val_loss = total_val_loss / len(val_loader)
         
-        # Print training and validation loss
+        # Early stopping check
+        if avg_val_loss < best_val_loss - args.min_delta:
+            best_val_loss = avg_val_loss
+            patience_counter = 0
+            # Save best model
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'val_indices': val_indices,
+                'epoch': epoch,
+                'best_val_loss': best_val_loss
+            }, f"{args.output_dir}/best_model.pth")
+        else:
+            patience_counter += 1
+            
+        if patience_counter >= args.patience:
+            print(f'Early stopping triggered after {epoch + 1} epochs')
+            early_stop = True
+            break
+            
         print(f"Epoch [{epoch+1}/{args.num_epochs}], "
             f"Training Loss: {avg_train_loss:.4f}, "
             f"Validation Loss: {avg_val_loss:.4f}")
         
         training_losses.append(avg_train_loss)
         validation_losses.append(avg_val_loss)
+
+    # After training loop
+    if not early_stop:
+        print(f'Completed all {args.num_epochs} epochs')
     
     # plot loss and save model 
     plot_loss(training_losses, validation_losses, save=f"{args.output_dir}/loss.png")
-    torch.save(model.state_dict(), f"{args.output_dir}/model.pth")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'val_indices': val_indices
+    }, f"{args.output_dir}/model.pth")
         
 if __name__ == "__main__":
     
@@ -95,6 +118,11 @@ if __name__ == "__main__":
     parser.add_argument("--hidden-size", type=int, default=64)
     parser.add_argument("-out", "--output-dir", type=str, default="output")
     parser.add_argument("-lr", "--learning-rate", type=float, default=0.001)
+    parser.add_argument("--n-gaussians", type=int, default=2)
+    parser.add_argument("--patience", type=int, default=5,
+                    help="Number of epochs to wait for improvement before stopping")
+    parser.add_argument("--min-delta", type=float, default=1e-3,
+                    help="Minimum change in validation loss to qualify as an improvement")
     args = parser.parse_args()
     
     # checkout for mps or cuda device
