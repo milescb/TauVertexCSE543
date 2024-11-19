@@ -2,6 +2,7 @@ import numpy as np
 import awkward as ak
 
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 import torch
 from torch.utils.data import Dataset
@@ -164,6 +165,9 @@ def training_data(tree, test_size=0.2, random_state=42):
         primary_vertex.y[:, None],
         primary_vertex.z[:, None],
     ], axis=1)
+    
+    scaler_inputs = StandardScaler()
+    inputs = scaler_inputs.fit_transform(ak.to_numpy(inputs))
 
     truth_decay_vertex = ThreeVectorArray(tree['truth_lep_decayVertex_v3'].array())
 
@@ -172,9 +176,9 @@ def training_data(tree, test_size=0.2, random_state=42):
         truth_decay_vertex.y[:, None],
         truth_decay_vertex.z[:, None],
     ], axis=1)
-
-    inputs = ak.to_numpy(inputs)
-    labels = ak.to_numpy(labels)
+    
+    scaler_labels = StandardScaler()
+    labels = scaler_labels.fit_transform(ak.to_numpy(labels)) #! must do this in testing data as well
 
     dataset = DecayDataset(inputs, labels)
     train_indices, val_indices = train_test_split(
@@ -184,9 +188,9 @@ def training_data(tree, test_size=0.2, random_state=42):
     train_dataset = torch.utils.data.Subset(dataset, train_indices)
     val_dataset = torch.utils.data.Subset(dataset, val_indices)
     
-    return train_dataset, val_dataset, val_indices
+    return train_dataset, val_dataset, val_indices, scaler_inputs, scaler_labels
 
-def testing_data(tree, val_indices):
+def testing_data(tree, val_indices, scaler_inputs, scaler_labels):
     """Get testing dataset from a TTree.
 
     Args:
@@ -212,6 +216,8 @@ def testing_data(tree, val_indices):
         primary_vertex.y[:, None],
         primary_vertex.z[:, None],
     ], axis=1)
+    
+    inputs = scaler_inputs.transform(ak.to_numpy(inputs))
 
     truth_decay_vertex = ThreeVectorArray(tree['truth_lep_decayVertex_v3'].array())
 
@@ -221,8 +227,7 @@ def testing_data(tree, val_indices):
         truth_decay_vertex.z[:, None],
     ], axis=1)
 
-    inputs = ak.to_numpy(inputs)
-    labels = ak.to_numpy(labels)
+    labels = scaler_labels.transform(ak.to_numpy(labels))
 
     dataset = DecayDataset(inputs, labels)
     test_dataset = torch.utils.data.Subset(dataset, val_indices)
@@ -232,4 +237,10 @@ def testing_data(tree, val_indices):
     est_decay_vertex_vec = np.array([est_decay_vertex.x, est_decay_vertex.y, est_decay_vertex.z])
     est_decay_vertex_vec = est_decay_vertex_vec[:, val_indices]
     
-    return test_dataset, est_decay_vertex_vec
+    # other important variables
+    muon_p4 = LorentzVectorArray(tree['muon_truth_p4'].array())
+    
+    muon_pt = muon_p4.pt[val_indices]
+    muon_eta = muon_p4.eta[val_indices]
+    
+    return test_dataset, est_decay_vertex_vec, muon_pt, muon_eta

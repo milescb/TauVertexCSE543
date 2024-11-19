@@ -4,6 +4,8 @@ import numpy as np
 import mplhep
 plt.style.use(mplhep.style.ATLAS)
 
+from .utils import response_curve, makeBins
+
 figsize = (6, 6)
 
 def plot_loss(train_loss, val_loss, save=''):
@@ -105,27 +107,61 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
                             save='', histtype='step'):
     """Plot response and lineshape (predicted / truth) of decay vertex."""
     
-    # make histograms and take the ratio of classical/truth and nn/truth
-    hist_truth, edges = np.histogram(truth, bins=bins, range=range)
-    hist_classical, _ = np.histogram(pred_classical, bins=bins, range=range)
-    hist_nn, _ = np.histogram(pred_nn, bins=bins, range=range)
+    # take the ratio of classical/truth and nn/truth
+    # account for division by zero by setting the ratio to 1 if truth and prediction are both zero
+    classical_over_truth = np.divide(pred_classical, truth, out=np.ones_like(pred_classical), where=truth!=0)
+    nn_over_truth = np.divide(pred_nn, truth, out=np.ones_like(pred_nn), where=truth!=0)
     
-    bin_centers = (edges[:-1] + edges[1:]) / 2
-    
-    ratio_classical = np.divide(hist_classical, hist_truth, 
-                              out=np.zeros_like(hist_classical, dtype=float), 
-                              where=hist_truth>0)
-    ratio_nn = np.divide(hist_nn, hist_truth,
-                        out=np.zeros_like(hist_nn, dtype=float),
-                        where=hist_truth>0)
+    if np.any(np.isnan(classical_over_truth)):
+        print('Data from ratio contains nans! :(')
+        
+    if np.any(np.isnan(nn_over_truth)):
+        print('Data from NN ratio contains nans! :(')
     
     plt.figure(figsize=figsize)
-    plt.step(bin_centers, ratio_classical, where='mid', label='Classical')
-    plt.step(bin_centers, ratio_nn, where='mid', label='NN')
+    plt.hist(classical_over_truth, bins=bins, range=range, 
+             histtype=histtype, label='Classical')
+    plt.hist(nn_over_truth, bins=bins, range=range,
+                histtype=histtype, label='NN')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.yscale('log')
     plt.legend()
     
     plt.tight_layout()
     if save != '':
         plt.savefig(save, dpi=300)
+        
+def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable, 
+                                nbins, xlabel, ylabel, range=(0, 2),
+                                save='', CL=0.68):
+    """Plot resolution vs a variable."""
+    
+    classical_over_truth = np.divide(pred_classical, truth, out=np.ones_like(pred_classical), where=truth!=0)
+    nn_over_truth = np.divide(pred_nn, truth, out=np.ones_like(pred_nn), where=truth!=0)
+    
+    bins = makeBins(range[0], range[1], nbins)
+    
+    (bin_centers_classical, bin_errors_classical, 
+     means_classical, mean_stat_err_classical, 
+     resol_classical) = response_curve(classical_over_truth, variable, bins, cl=CL)
+    
+    (bin_centers_nn, bin_errors_nn,
+        means_nn, mean_stat_err_nn,
+        resol_nn) = response_curve(nn_over_truth, variable, bins, cl=CL)
+    
+    plt.figure(figsize=figsize)
+    plt.errorbar(bin_centers_classical, means_classical, bin_errors_classical, fmt='o', label='Classical')
+    plt.errorbar(bin_centers_nn, means_nn, bin_errors_nn, fmt='o', label='NN')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.legend()
+    plt.savefig(save, dpi=300)
+    
+    plt.figure(figsize=figsize)
+    plt.plot(bin_centers_classical, resol_classical, label='Classical')
+    plt.plot(bin_centers_nn, resol_nn, label='NN')
+    plt.xlabel(xlabel)
+    plt.ylabel(f'Resolution at {int(CL*100)}% CL')
+    plt.legend()
+    plt.savefig(save.replace('.pdf', '_resolution.pdf'), dpi=300)

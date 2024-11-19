@@ -30,6 +30,7 @@ class MDNDecayNet(nn.Module):
         # Shared layers
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
         
         # Output layers for mixture parameters
         self.z_pi = nn.Linear(hidden_size, n_gaussians)  # mixing coefficients
@@ -39,6 +40,7 @@ class MDNDecayNet(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
         
         pi = F.softmax(self.z_pi(x), dim=1)  # normalize mixing coefficients
         mu = self.z_mu(x).view(-1, self.n_gaussians, self.output_size)

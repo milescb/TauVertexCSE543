@@ -5,9 +5,9 @@ import uproot
 import torch
 from torch.utils.data import DataLoader
 
-from decayvertex.process_data import testing_data
+from decayvertex.process_data import testing_data, LorentzVectorArray
 from decayvertex.architecture import MDNDecayNet
-from decayvertex.plotting import plot_multiple_histograms_with_ratio, plot_response_lineshape
+from decayvertex.plotting import plot_multiple_histograms_with_ratio, plot_response_lineshape, plot_resolution_vs_variable
 
 def evaluate_model(model, test_loader):
     """Evaluate MDN model and return predictions with uncertainties"""
@@ -37,9 +37,11 @@ def main():
     # Load model and validation indices
     checkpoint = torch.load(args.model_path)
     val_indices = checkpoint['val_indices']
+    scaler_inputs = checkpoint['scaler_inputs']
+    scaler_labels = checkpoint['scaler_labels']
     
     # Load test data using validation indices
-    test_dataset, est_decay_vertex_vec = testing_data(tree, val_indices)
+    test_dataset, est_decay_vertex_vec, muon_pt, muon_eta = testing_data(tree, val_indices, scaler_inputs, scaler_labels)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
     
     # Load model
@@ -54,6 +56,9 @@ def main():
     predictions = predictions.numpy()
     uncertainties = uncertainties.numpy()
     true_values = true_values.numpy()
+    
+    predictions = scaler_labels.inverse_transform(predictions)
+    true_values = scaler_labels.inverse_transform(true_values)
     
     # Plot comparisons with uncertainties
     components = ['x', 'y', 'z']
@@ -72,12 +77,28 @@ def main():
             save=f"{args.output_dir}/estimated_vertex_{component}.pdf",
             normalize=True
         )
-        plot_response_lineshape(true_values[:, i], predictions[:, i], est_decay_vertex_vec[i],
-                                bins=50, range=plot_range, 
-                                xlabel=f'Prediction / Truth for {component} [mm]',
+        plot_response_lineshape(true_values[:, i], est_decay_vertex_vec[i], predictions[:, i],
+                                bins=50, range=(-2, 4), 
+                                xlabel=f'Decay Vertex {component} [mm], Prediction / Truth',
                                 ylabel='Normalized Events',
                                 save=f"{args.output_dir}/response_lineshape_{component}.pdf"
         )
+        plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i], 
+                                    predictions[:, i], muon_pt,
+                                      nbins=25, range=(30, 80),
+                                      xlabel=f'Muon $p_T$ [GeV], Decay Vertex {component} [mm]',
+                                      ylabel='Resolution [mm]',
+                                      save=f"{args.output_dir}/pt_resolution_vs_vertex_{component}.pdf")
+        plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i],
+                                    predictions[:, i], muon_eta,
+                                    nbins=25, range=(-2, 2),
+                                    xlabel=f'Muon $\eta$, Decay Vertex {component} [mm]',
+                                    ylabel='Resolution [mm]',
+                                    save=f"{args.output_dir}/eta_resolution_vs_vertex_{component}.pdf")
+        
+        
+        # split events by abs(sigma/mu) < 1 and abs(sigma/mu) > 1
+        # mask = np.abs(uncertainties[:, i] / predictions[:, i]) < 1
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

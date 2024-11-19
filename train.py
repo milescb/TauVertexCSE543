@@ -14,7 +14,7 @@ from decayvertex.plotting import plot_loss
 
 def main():
 
-    train_dataset, val_dataset, val_indices = training_data(tree)
+    train_dataset, val_dataset, val_indices, scaler_inputs, scaler_labels = training_data(tree)
 
     batch_size = args.batch_size
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -81,6 +81,8 @@ def main():
             torch.save({
                 'model_state_dict': model.state_dict(),
                 'val_indices': val_indices,
+                'scaler_inputs': scaler_inputs,
+                'scaler_labels': scaler_labels,
                 'epoch': epoch,
                 'best_val_loss': best_val_loss
             }, f"{args.output_dir}/best_model.pth")
@@ -107,7 +109,9 @@ def main():
     plot_loss(training_losses, validation_losses, save=f"{args.output_dir}/loss.png")
     torch.save({
         'model_state_dict': model.state_dict(),
-        'val_indices': val_indices
+        'val_indices': val_indices,
+        'scaler_inputs': scaler_inputs,
+        'scaler_labels': scaler_labels
     }, f"{args.output_dir}/model.pth")
         
 if __name__ == "__main__":
