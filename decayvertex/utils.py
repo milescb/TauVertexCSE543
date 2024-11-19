@@ -65,7 +65,10 @@ def response_curve(res, var, bins, cl=0.68):
     _mean_stat_err = []
     _resol = []
     if np.any(np.isnan(res)):
-        print('Data contains nans! :(')
+        print('Data contains nans! Removing nans')
+        nan_indices = np.isnan(res)
+        res = res[~nan_indices]
+        var = var[~nan_indices]
     for _bin in bins:
         a = res[(var > _bin[0]) & (var < _bin[1])]
         if len(a) == 0:

@@ -178,7 +178,7 @@ def training_data(tree, test_size=0.2, random_state=42):
     ], axis=1)
     
     scaler_labels = StandardScaler()
-    labels = scaler_labels.fit_transform(ak.to_numpy(labels)) #! must do this in testing data as well
+    labels = scaler_labels.fit_transform(ak.to_numpy(labels))
 
     dataset = DecayDataset(inputs, labels)
     train_indices, val_indices = train_test_split(

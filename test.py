@@ -83,22 +83,24 @@ def main():
                                 ylabel='Normalized Events',
                                 save=f"{args.output_dir}/response_lineshape_{component}.pdf"
         )
+        
+        # do split in events
+        mask = np.abs(uncertainties[:, i] / predictions[:, i]) < 1
+        
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i], 
                                     predictions[:, i], muon_pt,
-                                      nbins=25, range=(30, 80),
-                                      xlabel=f'Muon $p_T$ [GeV], Decay Vertex {component} [mm]',
-                                      ylabel='Resolution [mm]',
+                                      nbins=12, range=(30, 80),
+                                      xlabel=f'Muon $p_T$ [GeV]',
+                                      ylabel=f'Decay Vertex {component}',
+                                      mask=mask,
                                       save=f"{args.output_dir}/pt_resolution_vs_vertex_{component}.pdf")
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i],
                                     predictions[:, i], muon_eta,
-                                    nbins=25, range=(-2, 2),
-                                    xlabel=f'Muon $\eta$, Decay Vertex {component} [mm]',
-                                    ylabel='Resolution [mm]',
+                                    nbins=12, range=(-2, 2),
+                                    xlabel=f'Muon $\eta$',
+                                    ylabel=f'Decay Vertex {component}',
+                                    mask=mask,
                                     save=f"{args.output_dir}/eta_resolution_vs_vertex_{component}.pdf")
-        
-        
-        # split events by abs(sigma/mu) < 1 and abs(sigma/mu) > 1
-        # mask = np.abs(uncertainties[:, i] / predictions[:, i]) < 1
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

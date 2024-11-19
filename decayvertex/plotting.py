@@ -17,6 +17,7 @@ def plot_loss(train_loss, val_loss, save=''):
     plt.legend()
     if save != '':
         plt.savefig(save, dpi=300)
+    plt.close()
         
 def plot_roc_curve(fpr, tpr, save=''):
     plt.figure(figsize=figsize)
@@ -50,6 +51,7 @@ def plot_multiple_histograms(variables, bins, range,
     plt.legend()
     if save != '':
         plt.savefig(save, dpi=300)
+    plt.close()
         
 def plot_multiple_histograms_with_ratio(variables, bins, range,
                                         xlabel, ylabel, labels, 
@@ -101,6 +103,7 @@ def plot_multiple_histograms_with_ratio(variables, bins, range,
     plt.tight_layout()
     if save != '':
         plt.savefig(save, dpi=300)
+    plt.close()
         
 def plot_response_lineshape(truth, pred_classical, pred_nn, 
                             bins, range, xlabel, ylabel, 
@@ -112,11 +115,10 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
     classical_over_truth = np.divide(pred_classical, truth, out=np.ones_like(pred_classical), where=truth!=0)
     nn_over_truth = np.divide(pred_nn, truth, out=np.ones_like(pred_nn), where=truth!=0)
     
-    if np.any(np.isnan(classical_over_truth)):
-        print('Data from ratio contains nans! :(')
-        
-    if np.any(np.isnan(nn_over_truth)):
-        print('Data from NN ratio contains nans! :(')
+    # check for nans and drop these:
+    nan_indices = np.isnan(classical_over_truth)
+    classical_over_truth = classical_over_truth[~nan_indices]
+    nn_over_truth = nn_over_truth[~nan_indices]
     
     plt.figure(figsize=figsize)
     plt.hist(classical_over_truth, bins=bins, range=range, 
@@ -131,14 +133,21 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
     plt.tight_layout()
     if save != '':
         plt.savefig(save, dpi=300)
+    plt.close()
         
 def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable, 
                                 nbins, xlabel, ylabel, range=(0, 2),
-                                save='', CL=0.68):
+                                save='', CL=0.68, mask=[]):
     """Plot resolution vs a variable."""
     
     classical_over_truth = np.divide(pred_classical, truth, out=np.ones_like(pred_classical), where=truth!=0)
     nn_over_truth = np.divide(pred_nn, truth, out=np.ones_like(pred_nn), where=truth!=0)
+    
+    # drop nans
+    nan_indices = np.isnan(classical_over_truth)
+    classical_over_truth = classical_over_truth[~nan_indices]
+    nn_over_truth = nn_over_truth[~nan_indices]
+    variable = variable[~nan_indices]
     
     bins = makeBins(range[0], range[1], nbins)
     
@@ -154,14 +163,48 @@ def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable,
     plt.errorbar(bin_centers_classical, means_classical, bin_errors_classical, fmt='o', label='Classical')
     plt.errorbar(bin_centers_nn, means_nn, bin_errors_nn, fmt='o', label='NN')
     plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.ylabel(f"{ylabel} Prediction / Truth")
     plt.legend()
+    plt.tight_layout()
     plt.savefig(save, dpi=300)
+    plt.close()
     
     plt.figure(figsize=figsize)
     plt.plot(bin_centers_classical, resol_classical, label='Classical')
     plt.plot(bin_centers_nn, resol_nn, label='NN')
     plt.xlabel(xlabel)
-    plt.ylabel(f'Resolution at {int(CL*100)}% CL')
+    plt.ylabel(f'Resolution of {ylabel} at {int(CL*100)}% CL')
     plt.legend()
+    plt.tight_layout()
     plt.savefig(save.replace('.pdf', '_resolution.pdf'), dpi=300)
+    plt.close()
+    
+    # split NN in events for mask and ~mask
+    # just plot resolution curve
+    if len(mask) > 0 and 'eta' in xlabel:
+        mask = mask[~nan_indices]
+        
+        nn_over_truth_upper = nn_over_truth[mask]
+        nn_over_truth_lower = nn_over_truth[~mask]
+        
+        (bin_centers_nn_upper, bin_errors_nn_upper,
+            means_nn_upper, mean_stat_err_nn_upper,
+            resol_nn_upper) = response_curve(nn_over_truth_upper, variable[mask], bins, cl=CL)
+        
+        (bin_centers_nn_lower, bin_errors_nn_lower,
+            means_nn_lower, mean_stat_err_nn_lower,
+            resol_nn_lower) = response_curve(nn_over_truth_lower, variable[~mask], bins, cl=CL)
+        
+        plt.figure(figsize=figsize)
+        plt.plot(bin_centers_classical, resol_classical, label='Classical')
+        plt.plot(bin_centers_nn, resol_nn, label='NN', color='orange')
+        plt.plot(bin_centers_nn_upper, resol_nn_upper, label=r'$|\sigma/\mu|$ > 1',
+                 color='orange', linestyle='--')
+        plt.plot(bin_centers_nn_lower, resol_nn_lower, label=r'$|\sigma/\mu|$ < 1',
+                 color='orange', linestyle='-.')
+        plt.xlabel(xlabel)
+        plt.ylabel(f'Resolution of {ylabel} at {int(CL*100)}% CL')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(save.replace('.pdf', '_split_resolution.pdf'), dpi=300)
+        plt.close()
