@@ -181,7 +181,7 @@ def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable,
     
     # split NN in events for mask and ~mask
     # just plot resolution curve
-    if len(mask) > 0 and 'eta' in xlabel:
+    if len(mask) > 0:
         mask = mask[~nan_indices]
         
         nn_over_truth_upper = nn_over_truth[mask]

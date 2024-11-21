@@ -35,7 +35,7 @@ def evaluate_model(model, test_loader):
 
 def main():
     # Load model and validation indices
-    checkpoint = torch.load(args.model_path)
+    checkpoint = torch.load(args.model_path, map_location='cpu')
     val_indices = checkpoint['val_indices']
     scaler_inputs = checkpoint['scaler_inputs']
     scaler_labels = checkpoint['scaler_labels']
@@ -89,14 +89,14 @@ def main():
         
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i], 
                                     predictions[:, i], muon_pt,
-                                      nbins=12, range=(30, 80),
+                                      nbins=7, range=(30, 80),
                                       xlabel=f'Muon $p_T$ [GeV]',
                                       ylabel=f'Decay Vertex {component}',
                                       mask=mask,
                                       save=f"{args.output_dir}/pt_resolution_vs_vertex_{component}.pdf")
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i],
                                     predictions[:, i], muon_eta,
-                                    nbins=12, range=(-2, 2),
+                                    nbins=7, range=(-2, 2),
                                     xlabel=f'Muon $\eta$',
                                     ylabel=f'Decay Vertex {component}',
                                     mask=mask,
