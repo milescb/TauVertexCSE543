@@ -106,10 +106,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, required=True,
                         help="Path to trained model weights")
-    parser.add_argument("-bs", "--batch-size", type=int, default=64)
-    parser.add_argument("--hidden-size", type=int, default=64)
+    parser.add_argument("-bs", "--batch-size", type=int, default=128)
+    parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--output-dir", type=str, default="output")
-    parser.add_argument("--n-gaussians", type=int, default=2)
+    parser.add_argument("--n-gaussians", type=int, default=3)
     args = parser.parse_args()
     
     file = uproot.open("data/data_large.root")
