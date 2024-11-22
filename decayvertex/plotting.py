@@ -107,7 +107,7 @@ def plot_multiple_histograms_with_ratio(variables, bins, range,
         
 def plot_response_lineshape(truth, pred_classical, pred_nn, 
                             bins, range, xlabel, ylabel, 
-                            save='', histtype='step'):
+                            save='', histtype='step', mask=[]):
     """Plot response and lineshape (predicted / truth) of decay vertex."""
     
     # take the ratio of classical/truth and nn/truth
@@ -134,6 +134,34 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
     if save != '':
         plt.savefig(save, dpi=300)
     plt.close()
+    
+    # split NN in events for mask and ~mask
+    if len(mask) > 0: 
+        mask = mask[~nan_indices]
+        
+        nn_over_truth_upper = nn_over_truth[mask]
+        nn_over_truth_lower = nn_over_truth[~mask]
+        
+        plt.figure(figsize=figsize)
+        plt.hist(classical_over_truth, bins=bins, range=range, 
+                 histtype=histtype, label='Classical')
+        plt.hist(nn_over_truth, bins=bins, range=range,
+                 histtype=histtype, label='NN')
+        plt.hist(nn_over_truth_upper, bins=bins, range=range,
+                 histtype=histtype, label=r'$|\sigma/\mu|$ < 1',
+                 linestyle='--')
+        plt.hist(nn_over_truth_lower, bins=bins, range=range,
+                 histtype=histtype, label=r'$|\sigma/\mu|$ > 1',
+                 linestyle='-.')
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.yscale('log')
+        plt.legend()
+        
+        plt.tight_layout()
+        if save != '':
+            plt.savefig(save.replace('.pdf', '_split.pdf'), dpi=300)
+        plt.close()
         
 def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable, 
                                 nbins, xlabel, ylabel, range=(0, 2),
@@ -198,9 +226,9 @@ def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable,
         plt.figure(figsize=figsize)
         plt.plot(bin_centers_classical, resol_classical, label='Classical')
         plt.plot(bin_centers_nn, resol_nn, label='NN', color='orange')
-        plt.plot(bin_centers_nn_upper, resol_nn_upper, label=r'$|\sigma/\mu|$ > 1',
+        plt.plot(bin_centers_nn_upper, resol_nn_upper, label=r'$|\sigma/\mu|$ < 1',
                  color='orange', linestyle='--')
-        plt.plot(bin_centers_nn_lower, resol_nn_lower, label=r'$|\sigma/\mu|$ < 1',
+        plt.plot(bin_centers_nn_lower, resol_nn_lower, label=r'$|\sigma/\mu|$ > 1',
                  color='orange', linestyle='-.')
         plt.xlabel(xlabel)
         plt.ylabel(f'Resolution of {ylabel} at {int(CL*100)}% CL')

@@ -80,16 +80,15 @@ def main():
             save=f"{args.output_dir}/estimated_vertex_{component}.pdf",
             normalize=True
         )
+        
+        # do split in events
+        mask = np.abs(uncertainties[:, i] / predictions[:, i]) < 0.5
+        
         plot_response_lineshape(true_values[:, i], est_decay_vertex_vec[i], predictions[:, i],
                                 bins=50, range=(-2, 4), 
                                 xlabel=f'Decay Vertex {component} [mm], Prediction / Truth',
                                 ylabel='Normalized Events',
-                                save=f"{args.output_dir}/response_lineshape_{component}.pdf"
-        )
-        
-        # do split in events
-        mask = np.abs(uncertainties[:, i] / predictions[:, i]) < 1
-        
+                                save=f"{args.output_dir}/response_lineshape_{component}.pdf")
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i], 
                                     predictions[:, i], muon_pt,
                                       nbins=7, range=(30, 80),
@@ -113,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--data-file", type=str, default="data_large.root")
     args = parser.parse_args()
     
-    file = uproot.open(f"data/f{args.data_file}")
+    file = uproot.open(f"data/{args.data_file}")
     tree = file["NOMINAL"]   
     
     main()
