@@ -28,8 +28,8 @@ def main():
     model = MDNDecayNet(input_size, hidden_size, output_size, n_gaussians)
     model = model.to(device)
 
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    criterion = nn.L1Loss()
+    optimizer = optim.Adagrad(model.parameters(), lr=args.learning_rate)
     
     training_losses = []
     validation_losses = []
