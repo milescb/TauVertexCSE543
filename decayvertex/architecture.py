@@ -31,17 +31,22 @@ class MDNDecayNet(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, hidden_size)
-        
+        self.fc4 = nn.Linear(hidden_size, hidden_size)
+        self.fc5 = nn.Linear(hidden_size, hidden_size)
+        self.dropout = nn.Dropout(0.3)
         # Output layers for mixture parameters
         self.z_pi = nn.Linear(hidden_size, n_gaussians)  # mixing coefficients
         self.z_mu = nn.Linear(hidden_size, n_gaussians * output_size)  # means
         self.z_sigma = nn.Linear(hidden_size, n_gaussians * output_size)  # standard deviations
         
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        
+        x = F.gelu(self.fc1(x))
+        x = F.gelu(self.fc2(x))
+        x = F.gelu(self.fc3(x))
+        x = F.gelu(self.fc4(x))
+        x = self.dropout(x)
+        x = F.gelu(self.fc5(x))
+
         pi = F.softmax(self.z_pi(x), dim=1)  # normalize mixing coefficients
         mu = self.z_mu(x).view(-1, self.n_gaussians, self.output_size)
         sigma = torch.exp(self.z_sigma(x)).view(-1, self.n_gaussians, self.output_size)
