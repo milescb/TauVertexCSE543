@@ -118,11 +118,11 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument("-epoch", "--num-epochs", type=int, default=10)
-    parser.add_argument("-bs", "--batch-size", type=int, default=64)
-    parser.add_argument("--hidden-size", type=int, default=64)
+    parser.add_argument("-bs", "--batch-size", type=int, default=128)
+    parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("-out", "--output-dir", type=str, default="output")
     parser.add_argument("-lr", "--learning-rate", type=float, default=0.001)
-    parser.add_argument("--n-gaussians", type=int, default=2)
+    parser.add_argument("--n-gaussians", type=int, default=3)
     parser.add_argument("--patience", type=int, default=5,
                     help="Number of epochs to wait for improvement before stopping")
     parser.add_argument("--min-delta", type=float, default=1e-3,
