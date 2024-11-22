@@ -39,14 +39,17 @@ def main():
     val_indices = checkpoint['val_indices']
     scaler_inputs = checkpoint['scaler_inputs']
     scaler_labels = checkpoint['scaler_labels']
+    hidden_size = checkpoint['hidden_size']
+    n_gaussians = checkpoint['n_gaussians']
+    batch_size = checkpoint['batch_size']
     
     # Load test data using validation indices
     test_dataset, est_decay_vertex_vec, muon_pt, muon_eta = testing_data(tree, val_indices, scaler_inputs, scaler_labels)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
     # Load model
     input_size = 9
-    model = MDNDecayNet(input_size, args.hidden_size, output_size=3, n_gaussians=args.n_gaussians)
+    model = MDNDecayNet(input_size, hidden_size, output_size=3, n_gaussians=n_gaussians)
     model.load_state_dict(checkpoint['model_state_dict'])
     
     # Get predictions with uncertainties
@@ -106,13 +109,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, required=True,
                         help="Path to trained model weights")
-    parser.add_argument("-bs", "--batch-size", type=int, default=128)
-    parser.add_argument("--hidden-size", type=int, default=128)
-    parser.add_argument("--output-dir", type=str, default="output")
-    parser.add_argument("--n-gaussians", type=int, default=3)
+    parser.add_argument("--output-dir", type=str, default="plots")
+    parser.add_argument("--data-path", type=str, default="data/data_large.root")
     args = parser.parse_args()
     
-    file = uproot.open("data/data_large.root")
+    file = uproot.open(args.data_path)
     tree = file["NOMINAL"]   
     
     main()
