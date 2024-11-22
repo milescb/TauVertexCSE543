@@ -113,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--data-file", type=str, default="data_large.root")
     args = parser.parse_args()
     
-    file = uproot.open(f"data/f{args.data_path}")
+    file = uproot.open(f"data/f{args.data_file}")
     tree = file["NOMINAL"]   
     
     main()
