@@ -110,10 +110,10 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", type=str, required=True,
                         help="Path to trained model weights")
     parser.add_argument("--output-dir", type=str, default="plots")
-    parser.add_argument("--data-path", type=str, default="data/data_large.root")
+    parser.add_argument("--data-file", type=str, default="data_large.root")
     args = parser.parse_args()
     
-    file = uproot.open(args.data_path)
+    file = uproot.open(f"data/f{args.data_path}")
     tree = file["NOMINAL"]   
     
     main()
