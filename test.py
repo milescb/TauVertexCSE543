@@ -103,6 +103,13 @@ def main():
                                     ylabel=f'Decay Vertex {component}',
                                     mask=mask,
                                     save=f"{args.output_dir}/eta_resolution_vs_vertex_{component}.pdf")
+        plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i],
+                                    predictions[:, i], true_values[:, i],
+                                    nbins=7, range=plot_range,
+                                    xlabel=f'Truth Decay Vertex {component}',
+                                    ylabel=f'Decay Vertex {component}',
+                                    mask=mask,
+                                    save=f"{args.output_dir}/vertex_resolution_vs_vertex_{component}.pdf")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
