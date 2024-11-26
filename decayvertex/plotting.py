@@ -148,10 +148,10 @@ def plot_response_lineshape(truth, pred_classical, pred_nn,
         plt.hist(nn_over_truth, bins=bins, range=range,
                  histtype=histtype, label='NN')
         plt.hist(nn_over_truth_upper, bins=bins, range=range,
-                 histtype=histtype, label=r'$|\sigma/\mu|$ < 1',
+                 histtype=histtype, label=r'$|\sigma/\mu|$ < 0.5',
                  linestyle='--')
         plt.hist(nn_over_truth_lower, bins=bins, range=range,
-                 histtype=histtype, label=r'$|\sigma/\mu|$ > 1',
+                 histtype=histtype, label=r'$|\sigma/\mu|$ > 0.5',
                  linestyle='-.')
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -226,9 +226,9 @@ def plot_resolution_vs_variable(truth, pred_classical, pred_nn, variable,
         plt.figure(figsize=figsize)
         plt.plot(bin_centers_classical, resol_classical, label='Classical')
         plt.plot(bin_centers_nn, resol_nn, label='NN', color='orange')
-        plt.plot(bin_centers_nn_upper, resol_nn_upper, label=r'$|\sigma/\mu|$ < 1',
+        plt.plot(bin_centers_nn_upper, resol_nn_upper, label=r'$|\sigma/\mu|$ < 0.5',
                  color='orange', linestyle='--')
-        plt.plot(bin_centers_nn_lower, resol_nn_lower, label=r'$|\sigma/\mu|$ > 1',
+        plt.plot(bin_centers_nn_lower, resol_nn_lower, label=r'$|\sigma/\mu|$ > 0.5',
                  color='orange', linestyle='-.')
         plt.xlabel(xlabel)
         plt.ylabel(f'Resolution of {ylabel} at {int(CL*100)}% CL')
