@@ -92,14 +92,14 @@ def main():
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i], 
                                     predictions[:, i], muon_pt,
                                       nbins=7, range=(30, 80),
-                                      xlabel=f'Muon $p_T$ [GeV]',
+                                      xlabel=r'Muon $p_T$ [GeV]',
                                       ylabel=f'Decay Vertex {component}',
                                       mask=mask,
                                       save=f"{args.output_dir}/pt_resolution_vs_vertex_{component}.pdf")
         plot_resolution_vs_variable(true_values[:, i], est_decay_vertex_vec[i],
                                     predictions[:, i], muon_eta,
                                     nbins=7, range=(-2, 2),
-                                    xlabel=f'Muon $\eta$',
+                                    xlabel=r'Muon $\eta$',
                                     ylabel=f'Decay Vertex {component}',
                                     mask=mask,
                                     save=f"{args.output_dir}/eta_resolution_vs_vertex_{component}.pdf")
